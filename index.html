@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="OSCE Marker">
+<meta name="theme-color" content="#0f6e66">
+<title>OSCE Marker</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="xlsx.full.min.js"></script>
+<style>
+  :root{
+    --paper:#f7f4ef; --paper-2:#fffdf9; --ink:#1c1b18; --ink-soft:#5c574e;
+    --line:#e2dccf; --line-strong:#cfc7b6;
+    --accent:#0f6e66; --accent-soft:#e3efed;
+    --fail:#b23a2e; --border:#c0852a; --pass:#2e7d5b; --pass-strong:#1f6647;
+    --shadow:0 1px 2px rgba(28,27,24,.06),0 8px 24px rgba(28,27,24,.06);
+    --radius:14px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;background:var(--paper);color:var(--ink);
+    font-family:"Hanken Grotesk",system-ui,-apple-system,Segoe UI,sans-serif;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+  body{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);}
+  .wrap{max-width:880px;margin:0 auto;padding:0 16px 120px;}
+  header.app{position:sticky;top:0;z-index:30;background:rgba(247,244,239,.92);
+    backdrop-filter:saturate(1.1) blur(8px);border-bottom:1px solid var(--line);
+    margin:0 -16px 18px;padding:14px 16px;}
+  .titlebar{display:flex;align-items:baseline;justify-content:space-between;gap:12px;}
+  .brand{font-family:"Fraunces",ui-serif,Georgia,serif;font-weight:600;font-size:22px;letter-spacing:-.01em;}
+  .brand small{font-family:"Hanken Grotesk",sans-serif;font-weight:600;color:var(--accent);
+    font-size:11px;letter-spacing:.14em;text-transform:uppercase;display:block;margin-bottom:1px;}
+  .saved-pill{font-size:12px;font-weight:600;color:var(--ink-soft);background:var(--paper-2);
+    border:1px solid var(--line);border-radius:999px;padding:6px 12px;white-space:nowrap;}
+  .saved-pill b{color:var(--accent);}
+
+  section.card{background:var(--paper-2);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:18px;margin-bottom:16px;}
+  .card h2{font-family:"Fraunces",serif;font-weight:600;font-size:17px;margin:0 0 14px;
+    display:flex;align-items:center;gap:9px;letter-spacing:-.01em;}
+  .card h2 .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);flex:none;}
+
+  label.fld{display:block;margin-bottom:12px;}
+  label.fld:last-child{margin-bottom:0;}
+  .fld span{display:block;font-size:12px;font-weight:600;color:var(--ink-soft);
+    text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;}
+  input,select,textarea{width:100%;font:inherit;font-size:16px;color:var(--ink);
+    background:var(--paper);border:1.5px solid var(--line-strong);border-radius:10px;
+    padding:12px 13px;outline:none;transition:border-color .15s,box-shadow .15s;}
+  input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);}
+  select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%235c574e' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center;padding-right:38px;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  @media(max-width:520px){.grid2{grid-template-columns:1fr;}}
+
+  /* learning outcomes */
+  .lo{display:flex;align-items:center;gap:14px;padding:12px 0;border-top:1px solid var(--line);}
+  .lo:first-child{border-top:none;padding-top:2px;}
+  .lo-label{flex:1;font-size:16px;font-weight:600;}
+  .lo-label small{display:block;font-size:12px;font-weight:500;color:var(--ink-soft);
+    text-transform:none;letter-spacing:0;margin-top:1px;}
+  .lo-input{width:108px;flex:none;}
+  .lo-input .box{position:relative;}
+  .lo-input input{text-align:center;font-size:18px;font-weight:600;padding-right:34px;}
+  .lo-input .unit{position:absolute;right:12px;top:50%;transform:translateY(-50%);
+    font-size:13px;font-weight:600;color:var(--ink-soft);pointer-events:none;}
+
+  .totalbar{display:flex;align-items:center;justify-content:space-between;gap:14px;
+    margin-top:16px;padding:14px 16px;background:var(--accent-soft);
+    border:1px solid #c8e0dc;border-radius:12px;}
+  .totalbar .lab{font-size:13px;font-weight:600;color:var(--pass-strong);text-transform:uppercase;letter-spacing:.06em;}
+  .totalbar .num{font-family:"Fraunces",serif;font-weight:600;font-size:32px;color:var(--accent);line-height:1;}
+
+  /* yes/no toggle */
+  .yn{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .yn button{min-height:54px;font-size:16px;font-weight:700;border-radius:11px;cursor:pointer;
+    background:var(--paper);border:1.5px solid var(--line-strong);color:var(--ink-soft);transition:all .12s;}
+  .yn button:active{transform:scale(.97);}
+  .yn button[data-v="no"].on{background:var(--pass);border-color:var(--pass);color:#fff;}
+  .yn button[data-v="yes"].on{background:var(--fail);border-color:var(--fail);color:#fff;}
+
+  .viva-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .vivabtn{min-height:54px;font-size:15px;font-weight:700;border-radius:11px;cursor:pointer;
+    background:var(--paper);border:1.5px solid var(--line-strong);color:var(--ink-soft);
+    transition:all .12s;padding:6px;}
+  .vivabtn:active{transform:scale(.97);}
+  .vivabtn.pass{border-color:var(--border);color:#9a6716;}
+  .vivabtn.pass.on{background:var(--pass-strong);border-color:var(--pass-strong);color:#fff;}
+  .vivabtn.fail{border-color:var(--fail);color:var(--fail);}
+  .vivabtn.fail.on{background:var(--fail);border-color:var(--fail);color:#fff;}
+
+  /* status pill */
+  .status-wrap{margin-top:16px;padding:16px;border-radius:12px;border:1.5px solid var(--line-strong);
+    background:var(--paper);text-align:center;transition:all .15s;}
+  .status-wrap .lab{font-size:12px;font-weight:600;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;}
+  .status-wrap .val{font-family:"Fraunces",serif;font-weight:600;font-size:26px;line-height:1.1;}
+  .status-wrap.s-pass{background:#eaf3ee;border-color:var(--pass);} .status-wrap.s-pass .val{color:var(--pass-strong);}
+  .status-wrap.s-viva{background:#f7efdd;border-color:var(--border);} .status-wrap.s-viva .val{color:#9a6716;}
+  .status-wrap.s-failviva{background:#f7e8df;border-color:#c0652a;} .status-wrap.s-failviva .val{color:#b25a1e;}
+  .status-wrap.s-fail{background:#f6e4e1;border-color:var(--fail);} .status-wrap.s-fail .val{color:var(--fail);}
+
+  /* sounds */
+  .snd{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--line);}
+  .snd:first-of-type{border-top:none;}
+  .snd .name{flex:1;font-size:15px;font-weight:500;}
+  .playbtn{min-width:52px;min-height:46px;border-radius:11px;border:1.5px solid var(--accent);
+    background:var(--accent-soft);color:var(--accent);font-size:18px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;transition:all .12s;}
+  .playbtn:active{transform:scale(.95);}
+  .playbtn.playing{background:var(--accent);color:#fff;}
+  .hint{font-size:12.5px;color:var(--ink-soft);line-height:1.5;margin-top:12px;
+    padding:10px 12px;background:var(--paper);border-radius:9px;border:1px dashed var(--line-strong);}
+
+  /* timer */
+  .timer-display{font-family:"Fraunces",serif;font-weight:600;font-size:64px;text-align:center;
+    letter-spacing:-.02em;line-height:1;margin:6px 0 16px;font-variant-numeric:tabular-nums;}
+  .timer-display.warn{color:var(--border);}
+  .timer-display.done{color:var(--fail);}
+  .timer-ctl{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
+  .timer-ctl button{min-height:52px;font-size:15px;font-weight:600;border-radius:11px;cursor:pointer;
+    border:1.5px solid var(--line-strong);background:var(--paper);color:var(--ink);transition:all .12s;}
+  .timer-ctl button:active{transform:scale(.97);}
+  .timer-ctl button.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .timer-presets{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+  .timer-presets button{padding:9px 18px;font-size:14px;font-weight:600;border-radius:999px;
+    border:1.5px solid var(--line-strong);background:var(--paper);color:var(--ink-soft);cursor:pointer;}
+  .timer-presets button.on{background:var(--ink);border-color:var(--ink);color:var(--paper);}
+  .timer-presets button.extra{border-color:var(--accent);color:var(--accent);background:var(--accent-soft);}
+  .timer-presets button.extra.applied{background:var(--accent);color:#fff;border-color:var(--accent);}
+
+  /* actions */
+  .actions{position:fixed;left:0;right:0;bottom:0;z-index:40;
+    background:rgba(247,244,239,.94);backdrop-filter:blur(8px);
+    border-top:1px solid var(--line);padding:12px 16px calc(12px + env(safe-area-inset-bottom));}
+  .actions .wrapinner{display:flex;gap:10px;width:100%;max-width:880px;margin:0 auto;}
+  .btn{flex:1;min-height:54px;font-size:16px;font-weight:700;border-radius:12px;cursor:pointer;
+    border:1.5px solid transparent;transition:all .12s;display:flex;align-items:center;
+    justify-content:center;gap:7px;}
+  .btn:active{transform:scale(.98);}
+  .btn-save{background:var(--accent);color:#fff;}
+  .btn-clear{background:var(--paper-2);border-color:var(--line-strong);color:var(--ink-soft);flex:none;padding:0 18px;}
+  .btn-export{background:var(--ink);color:var(--paper);flex:none;padding:0 18px;}
+
+  .toast{position:fixed;left:50%;top:24px;transform:translateX(-50%) translateY(-90px);
+    background:var(--ink);color:var(--paper);padding:13px 20px;border-radius:12px;font-weight:600;
+    font-size:14px;box-shadow:0 10px 30px rgba(0,0,0,.2);opacity:0;transition:all .35s;z-index:100;
+    pointer-events:none;max-width:90vw;text-align:center;}
+  .toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
+  .req{color:var(--fail);}
+</style>
+</head>
+<body>
+<div class="toast" id="toast"></div>
+<div class="wrap">
+  <header class="app">
+    <div class="titlebar">
+      <div class="brand"><small>Clinical Examination</small>OSCE Marker</div>
+      <div class="saved-pill">Saved: <b id="savedCount">0</b></div>
+    </div>
+  </header>
+
+  <!-- SESSION -->
+  <section class="card">
+    <h2><span class="dot"></span>Session</h2>
+    <label class="fld">
+      <span>Station</span>
+      <select id="stationSel"></select>
+    </label>
+    <div class="grid2">
+      <label class="fld">
+        <span>Student name <span class="req">*</span></span>
+        <input id="student" autocomplete="off" placeholder="Full name">
+      </label>
+      <label class="fld">
+        <span>Date</span>
+        <input id="examdate" type="date">
+      </label>
+    </div>
+    <div class="grid2">
+      <label class="fld">
+        <span>Attempt</span>
+        <select id="attemptSel"></select>
+      </label>
+      <label class="fld">
+        <span>Examiner</span>
+        <input id="examiner" autocomplete="off" placeholder="Your name / initials">
+      </label>
+    </div>
+    <label class="fld">
+      <span>Candidate no. (optional)</span>
+      <input id="candidate" inputmode="numeric" autocomplete="off" placeholder="e.g. 042">
+    </label>
+  </section>
+
+  <!-- MARKING GRID -->
+  <section class="card">
+    <h2><span class="dot"></span>Marking grid <span style="font-size:12px;font-weight:600;color:var(--ink-soft);margin-left:auto;text-transform:none;letter-spacing:0">score each / <span id="loMaxLbl">100</span></span></h2>
+    <div id="los"></div>
+    <div class="totalbar">
+      <span class="lab">Average score</span>
+      <span class="num" id="avgNum">—</span>
+    </div>
+  </section>
+
+  <!-- OUTCOME -->
+  <section class="card">
+    <h2><span class="dot"></span>Outcome</h2>
+    <label class="fld" style="margin-bottom:14px">
+      <span>Any red flag failures?</span>
+      <div class="yn" id="redflag">
+        <button data-v="no">No</button>
+        <button data-v="yes">Yes</button>
+      </div>
+    </label>
+    <label class="fld" style="margin-bottom:14px">
+      <span>Viva outcome (manual)</span>
+      <div class="viva-grid">
+        <button id="vivaPassBtn" class="vivabtn pass">Passed VIVA – 50%</button>
+        <button id="vivaFailBtn" class="vivabtn fail">Failed VIVA</button>
+      </div>
+    </label>
+    <div class="status-wrap" id="statusWrap">
+      <div class="lab">Overall status</div>
+      <div class="val" id="statusVal">—</div>
+    </div>
+  </section>
+
+  <!-- FEEDBACK -->
+  <section class="card">
+    <h2><span class="dot"></span>Feedback</h2>
+    <label class="fld">
+      <span>Examiner feedback</span>
+      <textarea id="examinerFb" rows="3" placeholder="Feedback for the student"></textarea>
+    </label>
+    <label class="fld">
+      <span>Patient feedback</span>
+      <textarea id="patientFb" rows="3" placeholder="Simulated patient's feedback"></textarea>
+    </label>
+  </section>
+
+  <!-- SOUNDS -->
+  <section class="card">
+    <h2><span class="dot"></span>Examination sounds</h2>
+    <div id="sounds"></div>
+    <div class="hint">Drop your audio files into the <b>/sounds</b> folder next to this app, matching the filenames in the <b>SOUNDS</b> list near the top of the code.</div>
+  </section>
+
+  <!-- TIMER -->
+  <section class="card">
+    <h2><span class="dot"></span>Station timer</h2>
+    <div class="timer-display" id="timerDisp">10:00</div>
+    <div class="timer-ctl">
+      <button id="tStart" class="primary">Start</button>
+      <button id="tPause">Pause</button>
+      <button id="tReset">Reset</button>
+    </div>
+    <div class="timer-presets" id="presets">
+      <button data-m="10" class="on">10 min</button>
+      <button data-m="15">15 min</button>
+      <button id="extraBtn" class="extra">+25% extra time</button>
+    </div>
+  </section>
+</div>
+
+<!-- ACTION BAR -->
+<div class="actions">
+  <div class="wrapinner">
+    <button class="btn btn-save" id="saveBtn">Save mark</button>
+    <button class="btn btn-clear" id="clearBtn">Clear</button>
+    <button class="btn btn-export" id="exportBtn">Export</button>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   CONFIG
+   ============================================================ */
+const LO_MAX = 100;                         // each learning outcome scored out of this
+const LEARNING_OUTCOMES = [                 // label + optional description
+  { id:"LO1", desc:"" },
+  { id:"LO2", desc:"" },
+  { id:"LO3", desc:"" },
+  { id:"LO4", desc:"" },
+  { id:"LO5", desc:"" },
+];
+const STATION_NAMES = [
+  "Cardio-resp 1","Cardio-resp 2","Cardio-resp 3","Cardio-resp 4","Cardio-resp 5","Cardio-resp 6",
+  "Abdo 1","Abdo 2","Abdo 3","Abdo 4","Abdo 5","Abdo 6",
+];
+const ATTEMPTS = ["First","Resit","Viva – capped 50","Mock"];
+const VIVA_CAP_ATTEMPT = "Viva – capped 50";   // this attempt caps the average at 50%
+const SOUNDS = [
+  { label:"Normal vesicular breathing", file:"sounds/normal-vesicular.mp3" },
+  { label:"Fine inspiratory crackles",  file:"sounds/fine-crackles.mp3" },
+  { label:"Wheeze",                      file:"sounds/wheeze.mp3" },
+  { label:"S1, S2",                      file:"sounds/s1-s2.mp3" },
+  { label:"S3",                          file:"sounds/s3.mp3" },
+  { label:"Pericardial rub",             file:"sounds/pericardial-rub.mp3" },
+];
+
+/* ============================================================
+   APP
+   ============================================================ */
+const $ = s => document.querySelector(s);
+const store = "osce_records_v2";
+let redflag = "no";
+let vivaOutcome = null;     // null | "pass" | "fail"
+
+function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show");
+  clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove("show"),2400);}
+function records(){try{return JSON.parse(localStorage.getItem(store)||"[]");}catch(e){return [];}}
+function setRecords(r){localStorage.setItem(store,JSON.stringify(r));updateSaved();}
+function updateSaved(){$("#savedCount").textContent=records().length;}
+
+/* selects */
+$("#stationSel").innerHTML = STATION_NAMES.map(n=>`<option>${n}</option>`).join("");
+$("#attemptSel").innerHTML = ATTEMPTS.map(a=>`<option>${a}</option>`).join("");
+$("#loMaxLbl").textContent = LO_MAX;
+$("#examdate").value = new Date().toISOString().slice(0,10);
+
+/* learning outcome inputs */
+$("#los").innerHTML = LEARNING_OUTCOMES.map((lo,i)=>`
+  <div class="lo">
+    <div class="lo-label">${lo.id}${lo.desc?`<small>${lo.desc}</small>`:""}</div>
+    <div class="lo-input"><div class="box">
+      <input type="number" inputmode="decimal" min="0" max="${LO_MAX}" data-i="${i}" placeholder="–">
+      <span class="unit">/${LO_MAX}</span>
+    </div></div>
+  </div>`).join("");
+$("#los").querySelectorAll("input").forEach(inp=>inp.addEventListener("input",compute));
+
+function loValues(){
+  return [...$("#los").querySelectorAll("input")].map(i=>i.value.trim()===""?null:Math.max(0,Math.min(LO_MAX,+i.value)));
+}
+function avgPercent(vals){
+  const filled = vals.filter(v=>v!==null);
+  if(!filled.length) return null;
+  const meanRaw = filled.reduce((a,b)=>a+b,0)/filled.length;
+  return meanRaw/LO_MAX*100;
+}
+
+/* outcome status from the % bands */
+function deriveStatus(pct, attempt, rf, viva){
+  if(rf==="yes") return {text:"Fail – red flag", cls:"s-fail"};
+  if(viva==="pass") return {text:"Passed VIVA – 50%", cls:"s-pass"};
+  if(viva==="fail") return {text: pct===null ? "Failed VIVA" : `Failed VIVA – ${Math.round(pct)}%`, cls:"s-fail"};
+  if(pct===null) return {text:"—", cls:""};
+  let p = pct;
+  if(attempt===VIVA_CAP_ATTEMPT) p = Math.min(p,50);   // viva-resit attempt capped at 50%
+  const r = Math.round(p);
+  if(r<45)  return {text:"Fail", cls:"s-fail"};        // <45%
+  if(r<=49) return {text:"VIVA", cls:"s-viva"};        // 45–49%
+  return {text:"Pass", cls:"s-pass"};                  // 50%+
+}
+
+function compute(){
+  const vals = loValues();
+  const pct = avgPercent(vals);
+  $("#avgNum").textContent = pct===null ? "—" : pct.toFixed(1).replace(/\.0$/,"")+"%";
+  const st = deriveStatus(pct, $("#attemptSel").value, redflag, vivaOutcome);
+  const w = $("#statusWrap");
+  w.className = "status-wrap"+(st.cls?" "+st.cls:"");
+  $("#statusVal").textContent = st.text;
+}
+$("#attemptSel").addEventListener("change",compute);
+
+/* manual viva outcome toggles (mutually exclusive) */
+function setViva(v){
+  vivaOutcome = (vivaOutcome===v) ? null : v;
+  $("#vivaPassBtn").classList.toggle("on",vivaOutcome==="pass");
+  $("#vivaFailBtn").classList.toggle("on",vivaOutcome==="fail");
+  compute();
+}
+$("#vivaPassBtn").onclick=()=>setViva("pass");
+$("#vivaFailBtn").onclick=()=>setViva("fail");
+
+/* red flag toggle */
+$("#redflag").querySelectorAll("button").forEach(b=>{
+  b.onclick=()=>{redflag=b.dataset.v;
+    $("#redflag").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x.dataset.v===redflag));
+    compute();};
+});
+$('#redflag button[data-v="no"]').classList.add("on");
+
+/* sounds */
+$("#sounds").innerHTML = SOUNDS.map((s,i)=>`<div class="snd">
+  <div class="name">${s.label}</div>
+  <button class="playbtn" data-i="${i}">▶</button>
+  <audio preload="none" src="${s.file}"></audio></div>`).join("");
+$("#sounds").querySelectorAll(".snd").forEach(row=>{
+  const btn=row.querySelector(".playbtn"),audio=row.querySelector("audio");
+  btn.onclick=()=>{
+    if(audio.paused){
+      $("#sounds").querySelectorAll("audio").forEach(a=>a.pause());
+      $("#sounds").querySelectorAll(".playbtn").forEach(b=>{b.classList.remove("playing");b.textContent="▶";});
+      audio.play().catch(()=>toast("Audio file not found — add it to /sounds"));
+      btn.classList.add("playing");btn.textContent="■";
+    }else{audio.pause();btn.classList.remove("playing");btn.textContent="▶";}
+  };
+  audio.onended=()=>{btn.classList.remove("playing");btn.textContent="▶";};
+});
+
+/* timer with WebAudio bell + 25% extra time */
+let timer={base:600,total:600,left:600,running:false,iv:null,extra:false};
+function fmt(s){const m=Math.floor(s/60),ss=s%60;return `${String(m).padStart(2,"0")}:${String(ss).padStart(2,"0")}`;}
+function renderTimer(){const d=$("#timerDisp");d.textContent=fmt(timer.left);
+  d.className="timer-display"+(timer.left===0?" done":(timer.left<=60?" warn":""));}
+function setMinutes(m){timer.base=m*60;timer.total=m*60;timer.left=m*60;timer.running=false;timer.extra=false;
+  clearInterval(timer.iv);renderTimer();
+  $("#presets").querySelectorAll("button[data-m]").forEach(b=>b.classList.toggle("on",+b.dataset.m===m));
+  $("#extraBtn").classList.remove("applied");}
+function beep(f,d){try{const c=beep.ctx||(beep.ctx=new (window.AudioContext||window.webkitAudioContext)());
+  const o=c.createOscillator(),g=c.createGain();o.frequency.value=f;o.type="sine";o.connect(g);g.connect(c.destination);
+  g.gain.setValueAtTime(.0001,c.currentTime);g.gain.exponentialRampToValueAtTime(.4,c.currentTime+.02);
+  g.gain.exponentialRampToValueAtTime(.0001,c.currentTime+d);o.start();o.stop(c.currentTime+d);}catch(e){}}
+function bell(){beep(880,.5);setTimeout(()=>beep(660,.6),250);}
+function tick(){if(timer.left>0){timer.left--;renderTimer();
+  if(timer.left===60)beep(700,.25);
+  if(timer.left===0){clearInterval(timer.iv);timer.running=false;bell();
+    if(navigator.vibrate)navigator.vibrate([200,100,200]);toast("Time!");}}}
+$("#tStart").onclick=()=>{if(timer.running||timer.left===0)return;timer.running=true;
+  if(beep.ctx&&beep.ctx.state==="suspended")beep.ctx.resume();beep(660,.1);timer.iv=setInterval(tick,1000);};
+$("#tPause").onclick=()=>{timer.running=false;clearInterval(timer.iv);};
+$("#tReset").onclick=()=>setMinutes(timer.base/60);
+$("#presets").querySelectorAll("button[data-m]").forEach(b=>b.onclick=()=>setMinutes(+b.dataset.m));
+$("#extraBtn").onclick=()=>{
+  const add=Math.round(timer.base*0.25);
+  timer.total+=add;timer.left+=add;timer.extra=true;
+  $("#extraBtn").classList.add("applied");renderTimer();
+  toast(`+25% extra time (${Math.round(add/60*10)/10} min added)`);
+};
+
+/* save */
+$("#saveBtn").onclick=()=>{
+  const student=$("#student").value.trim();
+  if(!student){toast("Enter the student name first");$("#student").focus();return;}
+  const vals=loValues();
+  if(vals.some(v=>v===null)){toast("Enter a score for all five learning outcomes");return;}
+  const pct=avgPercent(vals);
+  const attempt=$("#attemptSel").value;
+  const st=deriveStatus(pct,attempt,redflag,vivaOutcome);
+  const loObj={};LEARNING_OUTCOMES.forEach((lo,i)=>loObj[lo.id]=vals[i]);
+  const rec={
+    timestamp:new Date().toISOString(),
+    date:$("#examdate").value,
+    station:$("#stationSel").value,
+    student, candidate:$("#candidate").value.trim(), examiner:$("#examiner").value.trim(),
+    attempt, los:loObj, average:Math.round(pct*10)/10,
+    redFlag:redflag==="yes"?"Yes":"No", status:st.text,
+    examinerFeedback:$("#examinerFb").value.trim(),
+    patientFeedback:$("#patientFb").value.trim(),
+  };
+  const r=records();r.push(rec);setRecords(r);
+  toast(`Saved — ${student} · ${st.text}`);
+  clearForm(false);
+};
+function clearForm(confirmFirst){
+  if(confirmFirst && !confirm("Clear the current entry? (Saved records are kept)"))return;
+  $("#student").value="";$("#candidate").value="";$("#examinerFb").value="";$("#patientFb").value="";
+  $("#los").querySelectorAll("input").forEach(i=>i.value="");
+  redflag="no";$("#redflag").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x.dataset.v==="no"));
+  vivaOutcome=null;$("#vivaPassBtn").classList.remove("on");$("#vivaFailBtn").classList.remove("on");
+  compute();
+}
+$("#clearBtn").onclick=()=>clearForm(true);
+
+/* export to xlsx */
+$("#exportBtn").onclick=()=>{
+  const recs=records();
+  if(!recs.length){toast("No saved records to export yet");return;}
+  const wb=XLSX.utils.book_new();
+  const row=r=>{
+    const o={"Date":r.date,"Time":new Date(r.timestamp).toLocaleTimeString(),
+      "Student":r.student,"Candidate":r.candidate,"Station":r.station,
+      "Examiner":r.examiner,"Attempt":r.attempt};
+    LEARNING_OUTCOMES.forEach(lo=>o[lo.id]=r.los[lo.id]??"");
+    o["Average %"]=r.average;o["Red flag fail"]=r.redFlag;o["Overall status"]=r.status;
+    o["Examiner feedback"]=r.examinerFeedback;o["Patient feedback"]=r.patientFeedback;
+    return o;
+  };
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(recs.map(row)),"All marks");
+  STATION_NAMES.forEach(name=>{
+    const sr=recs.filter(r=>r.station===name);if(!sr.length)return;
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(sr.map(row)),name.slice(0,28));
+  });
+  const stamp=new Date().toISOString().slice(0,16).replace(/[:T]/g,"-");
+  XLSX.writeFile(wb,`OSCE-marks-${stamp}.xlsx`);
+  toast(`Exported ${recs.length} record(s)`);
+};
+
+/* init */
+setMinutes(10);compute();updateSaved();
+if("serviceWorker" in navigator){
+  window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js").catch(()=>{}));
+}
+</script>
+</body>
+</html>
