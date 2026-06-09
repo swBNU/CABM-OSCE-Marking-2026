@@ -287,10 +287,18 @@ const LEARNING_OUTCOMES = [                 // label + optional description
   { id:"LO4", desc:"" },
   { id:"LO5", desc:"" },
 ];
-const STATION_NAMES = [
-  "Cardio-resp 1","Cardio-resp 2","Cardio-resp 3","Cardio-resp 4","Cardio-resp 5","Cardio-resp 6",
-  "Abdo 1","Abdo 2","Abdo 3","Abdo 4","Abdo 5","Abdo 6",
+/* Stations grouped by discipline (4 groups of 6).
+   Add a description for any station in its labels[] slot, e.g.
+   { discipline:"History taking", labels:["Chest pain","Headache", ... ] }
+   Empty "" just shows the number, e.g. "History taking 1". */
+const STATION_GROUPS = [
+  { discipline:"Cardio-resp",    labels:["","","","","",""] },
+  { discipline:"Abdo",           labels:["","","","","",""] },
+  { discipline:"History taking", labels:["","","","","",""] },
+  { discipline:"ENT",            labels:["","","","","",""] },
 ];
+const stationName = (disc,i,lab) => `${disc} ${i+1}` + (lab ? ` — ${lab}` : "");
+const STATION_NAMES = STATION_GROUPS.flatMap(g => g.labels.map((lab,i)=>stationName(g.discipline,i,lab)));
 const ATTEMPTS = ["First","Resit","Viva – capped 50","Mock"];
 const VIVA_CAP_ATTEMPT = "Viva – capped 50";   // this attempt caps the average at 50%
 const SOUNDS = [
@@ -317,7 +325,10 @@ function setRecords(r){localStorage.setItem(store,JSON.stringify(r));updateSaved
 function updateSaved(){$("#savedCount").textContent=records().length;}
 
 /* selects */
-$("#stationSel").innerHTML = STATION_NAMES.map(n=>`<option>${n}</option>`).join("");
+$("#stationSel").innerHTML = STATION_GROUPS.map(g =>
+  `<optgroup label="${g.discipline}">` +
+  g.labels.map((lab,i)=>`<option>${stationName(g.discipline,i,lab)}</option>`).join("") +
+  `</optgroup>`).join("");
 $("#attemptSel").innerHTML = ATTEMPTS.map(a=>`<option>${a}</option>`).join("");
 $("#loMaxLbl").textContent = LO_MAX;
 $("#examdate").value = new Date().toISOString().slice(0,10);
