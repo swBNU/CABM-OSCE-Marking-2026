@@ -1,5 +1,7 @@
-/* OSCE Marker service worker — offline app shell cache */
-const CACHE = "osce-cache-v1";
+/* OSCE Marker service worker — v2
+   HTML: network-first (so updates appear when online), cache fallback offline.
+   Assets: cache-first with runtime caching. */
+const CACHE = "osce-cache-v2";
 const ASSETS = [
   "./",
   "./index.html",
@@ -16,22 +18,35 @@ self.addEventListener("install", e => {
 
 self.addEventListener("activate", e => {
   e.waitUntil(
-    caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
+    caches.keys()
+      .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
 
-/* Cache-first for app assets; runtime-cache other GETs (e.g. fonts, sound files) */
 self.addEventListener("fetch", e => {
   if (e.request.method !== "GET") return;
-  e.respondWith(
-    caches.match(e.request).then(hit => {
-      if (hit) return hit;
-      return fetch(e.request).then(res => {
+  const accept = e.request.headers.get("accept") || "";
+  const isHTML = e.request.mode === "navigate" || accept.includes("text/html");
+
+  if (isHTML) {
+    // Network-first: get the latest page when online, fall back to cache offline.
+    e.respondWith(
+      fetch(e.request).then(res => {
         const copy = res.clone();
         caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {});
         return res;
-      }).catch(() => hit);
-    })
+      }).catch(() => caches.match(e.request).then(h => h || caches.match("./index.html")))
+    );
+    return;
+  }
+
+  // Cache-first for static assets (libraries, icons, fonts, sounds).
+  e.respondWith(
+    caches.match(e.request).then(hit => hit || fetch(e.request).then(res => {
+      const copy = res.clone();
+      caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {});
+      return res;
+    }).catch(() => hit))
   );
 });
