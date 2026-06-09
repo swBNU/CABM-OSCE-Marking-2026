@@ -200,15 +200,14 @@
   <!-- TIMER -->
   <section class="card">
     <h2><span class="dot"></span>Station timer</h2>
-    <div class="timer-display" id="timerDisp">10:00</div>
+    <div class="timer-display" id="timerDisp">20:00</div>
     <div class="timer-ctl">
       <button id="tStart" class="primary">Start</button>
       <button id="tPause">Pause</button>
       <button id="tReset">Reset</button>
     </div>
     <div class="timer-presets" id="presets">
-      <button data-m="10" class="on">10 min</button>
-      <button data-m="15">15 min</button>
+      <button data-m="20" class="on">20 min</button>
       <button id="extraBtn" class="extra">+25% extra time</button>
     </div>
   </section>
@@ -240,17 +239,17 @@
         <button data-v="yes">Yes</button>
       </div>
     </label>
-    <label class="fld" style="margin-bottom:14px">
+    <div class="status-wrap" id="statusWrap" style="margin-top:0;margin-bottom:16px">
+      <div class="lab">Overall status</div>
+      <div class="val" id="statusVal">—</div>
+    </div>
+    <label class="fld">
       <span>Viva outcome (manual)</span>
       <div class="viva-grid">
         <button id="vivaPassBtn" class="vivabtn pass">Passed VIVA – 50%</button>
         <button id="vivaFailBtn" class="vivabtn fail">Failed VIVA</button>
       </div>
     </label>
-    <div class="status-wrap" id="statusWrap">
-      <div class="lab">Overall status</div>
-      <div class="val" id="statusVal">—</div>
-    </div>
   </section>
 
   <!-- FEEDBACK -->
@@ -494,7 +493,7 @@ $("#exportBtn").onclick=()=>{
 };
 
 /* init */
-setMinutes(10);compute();updateSaved();
+setMinutes(20);compute();updateSaved();
 if("serviceWorker" in navigator){
   window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js").catch(()=>{}));
 }
