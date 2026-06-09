@@ -164,13 +164,6 @@
     </div>
   </header>
 
-  <!-- SOUNDS -->
-  <section class="card">
-    <h2><span class="dot"></span>Examination sounds</h2>
-    <div id="sounds"></div>
-    <div class="hint">Drop your audio files into the <b>/sounds</b> folder next to this app, matching the filenames in the <b>SOUNDS</b> list near the top of the code.</div>
-  </section>
-
   <!-- SESSION -->
   <section class="card">
     <h2><span class="dot"></span>Session</h2>
@@ -202,6 +195,30 @@
       <span>Candidate no. (optional)</span>
       <input id="candidate" inputmode="numeric" autocomplete="off" placeholder="e.g. 042">
     </label>
+  </section>
+
+  <!-- TIMER -->
+  <section class="card">
+    <h2><span class="dot"></span>Station timer</h2>
+    <div class="timer-display" id="timerDisp">10:00</div>
+    <div class="timer-ctl">
+      <button id="tStart" class="primary">Start</button>
+      <button id="tPause">Pause</button>
+      <button id="tReset">Reset</button>
+    </div>
+    <div class="timer-presets" id="presets">
+      <button data-m="10" class="on">10 min</button>
+      <button data-m="15">15 min</button>
+      <button id="extraBtn" class="extra">+25% extra time</button>
+    </div>
+  </section>
+</div>
+
+  <!-- SOUNDS -->
+  <section class="card">
+    <h2><span class="dot"></span>Examination sounds</h2>
+    <div id="sounds"></div>
+    <div class="hint">Drop your audio files into the <b>/sounds</b> folder next to this app, matching the filenames in the <b>SOUNDS</b> list near the top of the code.</div>
   </section>
 
   <!-- MARKING GRID -->
@@ -249,23 +266,6 @@
       <textarea id="patientFb" rows="3" placeholder="Simulated patient's feedback"></textarea>
     </label>
   </section>
-
-  <!-- TIMER -->
-  <section class="card">
-    <h2><span class="dot"></span>Station timer</h2>
-    <div class="timer-display" id="timerDisp">10:00</div>
-    <div class="timer-ctl">
-      <button id="tStart" class="primary">Start</button>
-      <button id="tPause">Pause</button>
-      <button id="tReset">Reset</button>
-    </div>
-    <div class="timer-presets" id="presets">
-      <button data-m="10" class="on">10 min</button>
-      <button data-m="15">15 min</button>
-      <button id="extraBtn" class="extra">+25% extra time</button>
-    </div>
-  </section>
-</div>
 
 <!-- ACTION BAR -->
 <div class="actions">
